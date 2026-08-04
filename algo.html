@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>אלגוריתם מיקום על גריד</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<style>
+:root{
+  --paper:#F5F7F9; --panel:#FFFFFF; --ink:#161B22; --ink-2:#4A5563; --ink-3:#7B8694;
+  --rule:#DDE3E9; --rule-2:#C3CCD6;
+  --xband:#0E7C93; --xband-bg:#E2F4F8;
+  --keep:#2A6F49; --keep-bg:#E4F3EA;
+  --drop:#B23C31; --drop-bg:#FBE9E7;
+  --node:#8A6A00; --node-bg:#FBF2D9;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0E1116; --panel:#161B22; --ink:#E6EAEF; --ink-2:#A8B2BE; --ink-3:#6E7885;
+    --rule:#252C36; --rule-2:#39424F;
+    --xband:#43C9E0; --xband-bg:#0E2A31;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+
+header{border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:28px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.head-l{flex:1}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ink-3);
+  text-transform:uppercase;margin:0 0 10px}
+h1{font-size:30px;line-height:1.25;font-weight:600;margin:0 0 10px;letter-spacing:-.01em}
+.stand{color:var(--ink-2);max-width:62ch;margin:0;font-size:15px}
+
+.toggle{display:flex;gap:8px}
+.toggle button{background:transparent;border:1px solid var(--rule-2);border-radius:3px;
+  padding:8px 14px;font-family:var(--sans);font-size:13px;color:var(--ink-2);cursor:pointer;
+  transition:border-color .13s,background .13s}
+.toggle button[aria-pressed="true"]{border-color:var(--xband);background:var(--xband-bg);
+  color:var(--xband);font-weight:600}
+.toggle button:hover:not([aria-pressed="true"]){border-color:var(--rule)}
+
+.diagram-box{background:var(--panel);border:1px solid var(--rule);border-radius:4px;
+  padding:20px;margin-bottom:32px;overflow-x:auto}
+.diagram-box .mermaid{display:flex;justify-content:center}
+
+.content-area{background:var(--panel);border:1px solid var(--rule);border-radius:4px;
+  padding:26px 30px;min-height:520px}
+@media(max-width:520px){.content-area{padding:20px 18px 24px}}
+
+.layout{display:grid;grid-template-columns:296px 1fr;gap:36px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr;gap:24px}}
+
+.rail{position:sticky;top:24px}
+@media(max-width:900px){.rail{position:static}}
+.rail h2{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--ink-3);text-transform:uppercase;font-weight:500;margin:0 0 14px}
+
+.step{display:block;width:100%;text-align:right;background:var(--panel);
+  border:1px solid var(--rule);border-right:3px solid var(--rule-2);border-radius:3px;
+  padding:11px 13px;cursor:pointer;font-family:var(--sans);color:inherit;
+  transition:border-color .13s,background .13s;margin-bottom:8px}
+.step:hover{border-color:var(--rule-2);border-right-color:var(--xband)}
+.step:focus-visible{outline:2px solid var(--xband);outline-offset:2px}
+.step[aria-current="true"]{background:var(--xband-bg);border-right-color:var(--xband);
+  border-color:var(--xband)}
+.step .n{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.step[aria-current="true"] .n{color:var(--xband)}
+.step .t{font-size:14px;font-weight:600;margin-top:1px}
+.step .s{font-size:12px;color:var(--ink-2);margin-top:1px}
+
+h2{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--ink-3);text-transform:uppercase;font-weight:500;margin:0 0 14px}
+h3{font-size:22px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--xband);
+  text-transform:uppercase;margin:0 0 16px}
+h4{font-size:13px;font-weight:600;margin:26px 0 8px;padding-bottom:5px;
+  border-bottom:1px solid var(--rule);letter-spacing:.01em}
+h4:first-of-type{margin-top:0}
+p{margin:0 0 12px;color:var(--ink-2);line-height:1.7}
+p strong{color:var(--ink);font-weight:600}
+ul{margin:0 0 12px;padding-right:18px;color:var(--ink-2)}
+li{margin-bottom:5px}
+
+code{font-family:var(--mono);font-size:.88em;background:var(--paper);
+  padding:1px 5px;border-radius:2px;border:1px solid var(--rule)}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--paper);
+  border:1px solid var(--rule);border-radius:3px;padding:12px 14px;overflow-x:auto;
+  direction:ltr;text-align:left;margin:0 0 14px;color:var(--ink)}
+
+table{width:100%;border-collapse:collapse;margin:0 0 14px;font-size:13.5px}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;text-align:right;padding:0 9px 7px;
+  border-bottom:1px solid var(--rule-2)}
+td{padding:7px 9px;border-bottom:1px solid var(--rule);color:var(--ink-2)}
+td.num{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+
+.tag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;padding:1px 6px;border-radius:2px;vertical-align:middle;
+  margin-inline-start:5px;font-weight:500}
+.tag.m{background:var(--keep-bg);color:var(--keep);border:1px solid var(--keep)}
+.tag.a{background:var(--node-bg);color:var(--node);border:1px solid var(--node)}
+
+textarea{width:100%;font-family:var(--mono);font-size:12px;line-height:1.5;
+  background:var(--paper);border:1px solid var(--rule-2);border-radius:3px;
+  padding:8px 12px;color:var(--ink);resize:vertical;min-height:120px}
+textarea:focus{outline:2px solid var(--xband);outline-offset:-1px;border-color:var(--xband)}
+
+.pager{display:flex;justify-content:space-between;gap:10px;margin-top:28px;
+  padding-top:16px;border-top:1px solid var(--rule)}
+.pager button{background:transparent;border:1px solid var(--rule-2);border-radius:3px;
+  padding:7px 15px;font-family:var(--sans);font-size:13px;color:var(--ink-2);cursor:pointer}
+.pager button:hover:not(:disabled){border-color:var(--xband);color:var(--xband)}
+.pager button:disabled{opacity:.32;cursor:default}
+.pager button:focus-visible{outline:2px solid var(--xband);outline-offset:2px}
+
+footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="head-l">
+    <p class="eyebrow">אלגוריתם</p>
+    <h1>מיקום מצלמתי על גריד</h1>
+  </div>
+  <div class="toggle">
+    <button id="view-btn" type="button" aria-pressed="true">👁️ תצוגה</button>
+    <button id="edit-btn" type="button" aria-pressed="false">✏️ עריכה</button>
+  </div>
+</header>
+
+<div class="diagram-box">
+  <div id="diagram" class="mermaid">
+flowchart TD
+    A["פריים גווני אפור"] --> B["1 · סף Otsu<br/><small>נגזר מכל פריים בנפרד</small>"]
+    B --> C1["2 · סריקת עמודות<br/><small>מועמדים לפס X</small>"]
+    B --> C2["2 · סריקת שורות<br/><small>מועמדים לפס Y</small>"]
+    C1 --> D1["3 · הצבעת Hough<br/><small>בחירת הפס הדומיננטי</small>"]
+    C2 --> D2["3 · הצבעת Hough<br/><small>בחירת הפס הדומיננטי</small>"]
+    D1 --> E1["4 · התאמת קו<br/><small>TLS משוקלל · סינון MAD</small>"]
+    D2 --> E2["4 · התאמת קו<br/><small>TLS משוקלל · סינון MAD</small>"]
+    E1 --> F["5 · חילוץ פוזה<br/><small>θ · Y · צומת · X</small>"]
+    E2 --> F
+    F --> G["6 · המרה למ״מ<br/><small>80 מ״מ · 319 פיקסלים</small>"]
+    G --> H["X · Y · θ + מדדי איכות"]
+    
+    B -.->|"span < 12"| X1["אין מדידה"]
+    E1 -.->|"פס X לא נמצא"| X1
+    E2 -.->|"פס Y לא נמצא"| X2["θ · Y בלבד<br/><small>X לא זמין</small>"]
+    F -.->|"צומת מחוץ לפריים"| X2
+  </div>
+</div>
+
+<div class="layout">
+
+  <nav class="rail" aria-label="שלבים">
+    <h2>שלבים</h2>
+    <div id="steps"></div>
+  </nav>
+
+  <main class="content-area">
+    <h2>תוכן</h2>
+    <div id="body" aria-live="polite"></div>
+    <div class="pager">
+      <button id="prev" type="button">← השלב הקודם</button>
+      <button id="next" type="button">השלב הבא →</button>
+    </div>
+  </main>
+
+</div>
+
+<footer>כל מספר המסומן «נמדד» נגזר מ-634 פריימים בסרטון הבהיר ו-2,492 בחשוך.</footer>
+</div>
+
+<script>
+const M = '<span class="tag m">נמדד</span>';
+const A = '<span class="tag a">פתוח</span>';
+
+let DATA = {
+  steps: [
+    {
+      n:"עיקרון", t:"שני כללי יסוד", s:"כפופים לכל השלבים",
+      kicker:"הבסיס",
+      html:`<h4>לא מיישרים תמונה</h4>
+<p>תיקון עיוות של תמונה שלמה נוגע ב-76,800 פיקסלים וזקוק ל-frame buffer שני. אין כזה.</p>
+<p><strong>נמדד על החומרה:</strong> <code>lens_corr</code> ו-<code>rotation_corr</code> שניהם נופלים ב-<code>MemoryError</code> ב-QVGA.</p>
+<p>לכן: מזהים בתמונה המעוותת, מתרגמים למ"מ רק את התוצאה. <strong>התמונה נשארת מעוותת לאורך כל השרשרת.</strong></p>
+<h4>המידע התת-פיקסלי הוא הנכס</h4>
+<p>המעבר משחור ללבן נמרח על 2-3 פיקסלים. ממנו מחלצים מיקום ברזולוציה של עשירית פיקסל, וזה מקור כל הדיוק.</p>
+<p><strong>כל שלב נשפט לפי שאלה אחת: האם הוא שומר על המידע הזה או זורק אותו.</strong></p>`
+    },
+    {
+      n:"שלב 1", t:"סף Otsu", s:"נגזר מכל פריים בנפרד",
+      kicker:"בינריזציה",
+      html:`<h4>מה הוא עושה</h4>
+<pre>threshold = Otsu(frame)
+span = percentile(99.5) − percentile(50)
+min_contrast = 0.25 × span</pre>
+<p><strong>תנאי יציאה:</strong> אם <code>span &lt; 12</code> רמות אפור — אין מדידה.</p>
+<h4>למה נבחר</h4>
+<p>שני סרטוני הפיתוח נבדלים <strong>פי שלושה בבהירות</strong>. הגרסה הקודמת חתכה ב-35% בין אחוזונים — זה היה קבוע שכוונן ידנית.</p>
+<p>Otsu שווה או טוב יותר בשני הסרטונים <strong>ואין בו אף קבוע לכוון</strong>. הוא בוחר את הסף שממקסם את השונות בין שתי קבוצות הפיקסלים.</p>`
+    },
+    {
+      n:"שלב 2", t:"סריקה וחילוץ מועמדים", s:"דיוק תת-פיקסל",
+      kicker:"כאן נוצר הדיוק",
+      html:`<h4>מה הוא עושה</h4>
+<p>עובר על קווי סריקה ומוצא רצפים בהירים שעומדים בתנאים:</p>
+<ul>
+<li><strong>עובי מינימלי:</strong> 8 px (רעש)</li>
+<li><strong>עובי מקסימלי:</strong> 45 px (פס ניצב)</li>
+<li><strong>ניגודיות:</strong> ≥ min_contrast</li>
+<li><strong>מיקום:</strong> לא בקצה (נדרש פיקסל לאינטרפולציה)</li>
+</ul>
+<h4>למה איסוף מלא</h4>
+<p><strong>נאספים כל המועמדים בכל קו סריקה.</strong> זו לא בחירה תיאורטית — זה תיקון לבאג שנמדד.</p>
+<p><strong>נמדד:</strong> היוריסטיקה "הקרוב למרכז" בחרה את שולי העדשה, ונתנה rms של 12.68. איסוף מלא + הצבעה = 0.57.</p>
+<h4>למה אינטרפולציה</h4>
+<p>זה <strong>המקום היחיד בשרשרת שבו נוצר הדיוק התת-פיקסלי</strong>. בלעדיו השגיאה קופצת מ-0.25 ל-0.5 פיקסל, ואין דבר בהמשך שיחזיר את זה.</p>`
+    },
+    {
+      n:"שלב 3", t:"הצבעת Hough", s:"בחירת הפס הדומיננטי",
+      kicker:"בחירה, לא מדידה",
+      html:`<h4>מה הוא עושה</h4>
+<pre>for θ in 180 angles:
+    ρ = −sin(θ)·u + cos(θ)·v
+    accumulate to round(ρ), weight = contrast
+winner = highest weighted sum</pre>
+<h4>למה נבחר</h4>
+<p><strong>נמדד על 300 פריימים:</strong></p>
+<ul>
+<li>התאמה תת-פיקסלית: 271 ערכי θ שונים</li>
+<li>cv2.HoughLines: 6 ערכים בלבד (−4, −3, −2, −1, 0, +1)</li>
+<li><strong>הצבעה על תת-פיקסל:</strong> 0.243 rms, 0.57 ms, דטרמיניסטי</li>
+</ul>
+<p>דיוק זהה ל-RANSAC, <strong>פי 2.4-2.8 מהיר</strong>, ודטרמיניסטי — אותו קלט תמיד אותו פלט.</p>
+<h4>עקרון ההפרדה</h4>
+<p><strong>הקוונטיזציה קובעת מי נבחר, לא מה נמדד.</strong> הזווית עצמה מחושבת מחדש בשלב 4 מהנקודות הנבחרות.</p>`
+    },
+    {
+      n:"שלב 4", t:"התאמת קו", s:"TLS משוקלל + סינון MAD",
+      kicker:"מכאן מגיע θ",
+      html:`<h4>מה הוא עושה</h4>
+<pre>θ = ½ · atan2(2·S_uv , S_uu − S_vv)
+MAD = median(|r − median(r)|) × 1.4826
+inlier = |r − median(r)| &lt; 3.0 × MAD</pre>
+<p>נוסחה סגורה, מעבר אחד על הנקודות. שתי איטרציות של סינון חריגים.</p>
+<h4>למה אורתוגונלי</h4>
+<ul>
+<li>שתיהן יש שגיאה (לא רק y)</li>
+<li>אורתוגונלי עובד בכל זווית — רגיל מתפוצץ כשהקו אנכי (ופס Y אנכי בהגדרה)</li>
+</ul>
+<h4>למה משקלים</h4>
+<p>קצה חד מייצג מעבר תלול — אינטרפולציה עליו מדויקת יותר. משקל = ניגודיות.</p>`
+    },
+    {
+      n:"שלב 5", t:"חילוץ פוזה", s:"θ · Y · צומת · X",
+      kicker:"משני קווים לשלושה מספרים",
+      html:`<h4>מה הוא עושה</h4>
+<pre>Y = normal · (center − point_on_line)
+q = intersect(fit_X, fit_Y)
+X = direction · (q − center)</pre>
+<h4>מרכז הפריים = מרכז הרובוט</h4>
+<p>המצלמה מוברגת, ולכן מרכז הפריים מייצג נקודה קבועה בגוף הרובוט. אין צורך לחפש ולא צריך מעקב.</p>
+<h4>זמינות חלקית</h4>
+<ul>
+<li>שני פסים + צומת תקפה → X, Y, θ</li>
+<li>פס X בלבד → Y, θ (X לא-זמין)</li>
+<li>פס X לא נמצא → אין מדידה</li>
+</ul>
+<p><strong>שדה ריק הוא מידע; מספר שגוי הוא נזק.</strong></p>
+<h4>פתוח ${A}</h4>
+<p><strong>2.8% מהפריימים</strong> בסרטון החשוך מחליפים בין הצירים — קפיצת θ עד 75.48°.
+שיטת זיהוי הפער: חיפוש רצף כהה, בדיקת פילוג עובי, או זיהוי הנקודה העגולה.</p>`
+    },
+    {
+      n:"שלב 6", t:"המרה למ״מ", s:"80 מ״מ · 319 פיקסלים",
+      kicker:"החסם על הדיוק",
+      html:`<h4>מה הוא עושה</h4>
+<pre>scale = 80 / 319 ≈ 0.2508 mm per pixel</pre>
+<p><strong>נמדד:</strong> 318.4 ו-319.1 פיקסלים בין צמתים, במרכז הפריים.</p>
+<h4>המגבלה</h4>
+<p><strong>נמדד:</strong> אותם 80 מ"מ תופסים 319 px במרכז, אבל 86–132 px ברצועה עליונה — <strong>פי 2.8</strong> הבדל.</p>
+<p>קיצור פרספקטיבי. הקבוע תקף רק סביב מרכז; נקודה גבוה בפריים מתורגמת שגוי.</p>
+<h4>הפרדה חשובה</h4>
+<ul>
+<li><strong>חזרתיות:</strong> 0.027 px (האלגוריתם — נמדד, אמיתי)</li>
+<li><strong>דיוק מוחלט:</strong> לא נקבע (ההמרה — כרגע גסה)</li>
+</ul>
+<p>שלבים 1-5 קובעים את החזרתיות; <strong>שלב 6 לבדו קובע את הדיוק המוחלט.</strong></p>
+<h4>פתוח ${A}</h4>
+<p>טבלת כיול או מטריצת הטלה — מיפוי לכל אזור בפריים בקנה המידה המקומי שלו.</p>`
+    }
+  ]
+};
+
+let MODE = 'view';
+let CUR = 0;
+
+const viewBtn = document.getElementById('view-btn');
+const editBtn = document.getElementById('edit-btn');
+const stepsEl = document.getElementById('steps');
+const bodyEl = document.getElementById('body');
+const prevEl = document.getElementById('prev');
+const nextEl = document.getElementById('next');
+
+mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+
+function load(){
+  const saved = localStorage.getItem('algo-data');
+  if (saved) DATA = JSON.parse(saved);
+}
+
+function save(){
+  localStorage.setItem('algo-data', JSON.stringify(DATA));
+}
+
+function render(){
+  if (MODE === 'view') renderView();
+  else renderEdit();
+}
+
+function renderView(){
+  const s = DATA.steps[CUR];
+  bodyEl.innerHTML = '<p class="kicker">' + s.kicker + '</p><h3>' + s.t + '</h3>' + s.html;
+}
+
+function renderEdit(){
+  const s = DATA.steps[CUR];
+  let form = '<h3 style="margin-top:0">ערוך שלב ' + (CUR+1) + '</h3>';
+  form += '<label style="display:block;font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px">כותרת</label>';
+  form += '<input type="text" id="edt" style="width:100%;padding:8px 12px;border:1px solid var(--rule-2);border-radius:3px;font-family:var(--sans);font-size:14px;margin-bottom:14px" value="'+s.t+'">';
+  form += '<label style="display:block;font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px">תיאור קצר</label>';
+  form += '<input type="text" id="eds" style="width:100%;padding:8px 12px;border:1px solid var(--rule-2);border-radius:3px;font-family:var(--sans);font-size:14px;margin-bottom:14px" value="'+s.s+'">';
+  form += '<label style="display:block;font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px">תוכן (HTML)</label>';
+  form += '<textarea id="edh">' + s.html + '</textarea>';
+  form += '<div style="margin-top:14px"><button id="save-btn" type="button" style="background:var(--xband);border:1px solid var(--xband);border-radius:3px;padding:8px 16px;color:#fff;font-family:var(--sans);font-size:13px;cursor:pointer;font-weight:600">שמור שינויים</button></div>';
+  bodyEl.innerHTML = form;
+  
+  document.getElementById('save-btn').addEventListener('click', () => {
+    DATA.steps[CUR].t = document.getElementById('edt').value;
+    DATA.steps[CUR].s = document.getElementById('eds').value;
+    DATA.steps[CUR].html = document.getElementById('edh').value;
+    save();
+    setMode('view');
+  });
+}
+
+function drawSteps(){
+  stepsEl.innerHTML = '';
+  DATA.steps.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'step';
+    b.setAttribute('aria-current', i === CUR ? 'true' : 'false');
+    b.innerHTML = '<div class="n">' + s.n + '</div>' +
+                  '<div class="t">' + s.t + '</div>' +
+                  '<div class="s">' + s.s + '</div>';
+    b.addEventListener('click', () => { CUR = i; render(); drawSteps(); updateButtons(); });
+    stepsEl.appendChild(b);
+  });
+  updateButtons();
+}
+
+function updateButtons(){
+  prevEl.disabled = CUR === 0;
+  nextEl.disabled = CUR === DATA.steps.length - 1;
+}
+
+function setMode(m){
+  MODE = m;
+  if (m === 'view'){
+    viewBtn.setAttribute('aria-pressed', 'true');
+    editBtn.setAttribute('aria-pressed', 'false');
+  } else {
+    viewBtn.setAttribute('aria-pressed', 'false');
+    editBtn.setAttribute('aria-pressed', 'true');
+  }
+  render();
+}
+
+viewBtn.addEventListener('click', () => setMode('view'));
+editBtn.addEventListener('click', () => setMode('edit'));
+
+prevEl.addEventListener('click', () => {
+  if (CUR > 0){ CUR--; render(); drawSteps(); }
+});
+nextEl.addEventListener('click', () => {
+  if (CUR < DATA.steps.length - 1){ CUR++; render(); drawSteps(); }
+});
+
+load();
+drawSteps();
+render();
+</script>
+</body>
+</html>
